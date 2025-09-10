@@ -56,7 +56,9 @@ impl App {
 
     fn handle_event() -> std::io::Result<Option<Message>> {
         match event::read()? {
-            Event::Key(key) if key.kind == KeyEventKind::Press => Ok(Self::handle_key_press(key)),
+            Event::Key(key) if key.kind == KeyEventKind::Press => {
+                Ok(Self::handle_key_press(key))
+            }
             _ => Ok(None),
         }
     }
