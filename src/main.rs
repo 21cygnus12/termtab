@@ -48,7 +48,7 @@ impl App {
     fn handle_key_press(key_event: KeyEvent) -> Option<Message> {
         match key_event.code {
             KeyCode::Char('q') => Some(Message::Quit),
-            KeyCode::Char('n') => Some(Message::ChangeMode(Mode::Normal)),
+            KeyCode::Esc => Some(Message::ChangeMode(Mode::Normal)),
             KeyCode::Char('i') => Some(Message::ChangeMode(Mode::Insert)),
             _ => None,
         }
