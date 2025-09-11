@@ -1,3 +1,5 @@
+use std::io;
+
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{DefaultTerminal, Frame, widgets::Paragraph};
 
@@ -47,14 +49,14 @@ impl App {
 
     fn handle_key_press(key_event: KeyEvent) -> Option<Message> {
         match key_event.code {
-            KeyCode::Char('q') => Some(Message::Quit),
-            KeyCode::Esc => Some(Message::ChangeMode(Mode::Normal)),
             KeyCode::Char('i') => Some(Message::ChangeMode(Mode::Insert)),
+            KeyCode::Esc => Some(Message::ChangeMode(Mode::Normal)),
+            KeyCode::Char('q') => Some(Message::Quit),
             _ => None,
         }
     }
 
-    fn handle_event() -> std::io::Result<Option<Message>> {
+    fn handle_event() -> io::Result<Option<Message>> {
         match event::read()? {
             Event::Key(key) if key.kind == KeyEventKind::Press => {
                 Ok(Self::handle_key_press(key))
@@ -63,10 +65,7 @@ impl App {
         }
     }
 
-    pub fn run(
-        &mut self,
-        terminal: &mut DefaultTerminal,
-    ) -> std::io::Result<()> {
+    pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
         while let AppStatus::Running = self.status {
             terminal.draw(|frame| self.view(frame))?;
             let current_message = Self::handle_event()?;
