@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, path::PathBuf};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{DefaultTerminal, Frame, widgets::Paragraph};
@@ -8,36 +8,37 @@ enum Message {
     Quit,
 }
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 enum Mode {
-    #[default]
     Normal,
     Insert,
 }
 
-#[derive(Default)]
+#[derive(Debug)]
 pub struct App {
+    path: PathBuf,
     mode: Mode,
     status: AppStatus,
 }
 
-#[derive(Default)]
+#[derive(Debug)]
 enum AppStatus {
-    #[default]
     Running,
     Done,
 }
 
 impl App {
-    pub fn new() -> Self {
-        App::default()
+    pub fn new(path: PathBuf) -> Self {
+        Self {
+            path,
+            mode: Mode::Normal,
+            status: AppStatus::Running,
+        }
     }
 
     fn view(&self, frame: &mut Frame) {
-        frame.render_widget(
-            Paragraph::new(format!("Mode: {:?}", self.mode)),
-            frame.area(),
-        );
+        frame
+            .render_widget(Paragraph::new(format!("{:?}", self)), frame.area());
     }
 
     fn update(&mut self, message: Message) {
