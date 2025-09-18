@@ -1,13 +1,16 @@
 use std::{io, path::PathBuf};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
-use ratatui::{DefaultTerminal, Frame, widgets::Paragraph};
+use ratatui::{
+    DefaultTerminal, Frame,
+    layout::{Constraint, Direction, Layout},
+    widgets::Paragraph,
+};
 
 use crate::tab::Tab;
 
 enum Message {
     KeyPressed(KeyEvent),
-    Quit,
 }
 
 #[derive(Debug)]
@@ -44,8 +47,18 @@ impl App {
     }
 
     fn view(&self, frame: &mut Frame) {
-        frame
-            .render_widget(Paragraph::new(format!("{:?}", self)), frame.area());
+        let layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![Constraint::Min(0), Constraint::Length(1)])
+            .split(frame.area());
+        frame.render_widget(
+            Paragraph::new(format!("{:?}", self.mode)),
+            layout[0],
+        );
+        frame.render_widget(
+            Paragraph::new(format!("{}", self.command)),
+            layout[1],
+        );
     }
 
     fn update(&mut self, message: Message) {
@@ -55,7 +68,6 @@ impl App {
                 Mode::Insert => self.handle_insert_mode_key(key_event),
                 Mode::Command => self.handle_command_mode_key(key_event),
             },
-            Message::Quit => self.status = AppStatus::Done,
         }
 
         if !self.command.is_empty() {
@@ -91,6 +103,17 @@ impl App {
                 self.command.pop();
             }
             KeyCode::Char(c) => self.command.push(c),
+            KeyCode::Enter => {
+                self.run_command();
+                self.command.clear();
+            }
+            _ => (),
+        }
+    }
+
+    fn run_command(&mut self) {
+        match &self.command[1..] {
+            "quit" | "q" => self.status = AppStatus::Done,
             _ => (),
         }
     }
