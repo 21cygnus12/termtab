@@ -1,6 +1,25 @@
+use ratatui::widgets::StatefulWidget;
+
+pub struct TabState {
+    selected_string: u8,
+}
+
 #[derive(Debug)]
 pub struct Tab {
     measures: Vec<Measure>,
+}
+
+impl StatefulWidget for Tab {
+    type State = TabState;
+
+    fn render(
+        self,
+        area: ratatui::prelude::Rect,
+        buf: &mut ratatui::prelude::Buffer,
+        state: &mut Self::State,
+    ) {
+        todo!()
+    }
 }
 
 impl Tab {

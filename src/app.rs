@@ -6,7 +6,7 @@ use ratatui::{DefaultTerminal, Frame, widgets::Paragraph};
 use crate::tab::Tab;
 
 enum Message {
-    ChangeMode(Mode),
+    KeyPressed(KeyEvent),
     Quit,
 }
 
@@ -14,6 +14,7 @@ enum Message {
 enum Mode {
     Normal,
     Insert,
+    Command,
 }
 
 #[derive(Debug)]
@@ -22,6 +23,7 @@ pub struct App {
     mode: Mode,
     status: AppStatus,
     tab: Tab,
+    command: String,
 }
 
 #[derive(Debug)]
@@ -37,6 +39,7 @@ impl App {
             mode: Mode::Normal,
             status: AppStatus::Running,
             tab: Tab::new(),
+            command: String::new(),
         }
     }
 
@@ -47,24 +50,55 @@ impl App {
 
     fn update(&mut self, message: Message) {
         match message {
-            Message::ChangeMode(mode) => self.mode = mode,
+            Message::KeyPressed(key_event) => match self.mode {
+                Mode::Normal => self.handle_normal_mode_key(key_event),
+                Mode::Insert => self.handle_insert_mode_key(key_event),
+                Mode::Command => self.handle_command_mode_key(key_event),
+            },
             Message::Quit => self.status = AppStatus::Done,
+        }
+
+        if !self.command.is_empty() {
+            self.mode = Mode::Command;
+        }
+
+        if let Mode::Command = self.mode {
+            if self.command.is_empty() {
+                self.mode = Mode::Normal;
+            }
         }
     }
 
-    fn handle_key_press(key_event: KeyEvent) -> Option<Message> {
+    fn handle_normal_mode_key(&mut self, key_event: KeyEvent) {
         match key_event.code {
-            KeyCode::Char('i') => Some(Message::ChangeMode(Mode::Insert)),
-            KeyCode::Esc => Some(Message::ChangeMode(Mode::Normal)),
-            KeyCode::Char('q') => Some(Message::Quit),
-            _ => None,
+            KeyCode::Char('i') => self.mode = Mode::Insert,
+            KeyCode::Char(':') => self.command.push(':'),
+            _ => (),
+        }
+    }
+
+    fn handle_insert_mode_key(&mut self, key_event: KeyEvent) {
+        match key_event.code {
+            KeyCode::Esc => self.mode = Mode::Normal,
+            _ => (),
+        }
+    }
+
+    fn handle_command_mode_key(&mut self, key_event: KeyEvent) {
+        match key_event.code {
+            KeyCode::Esc => self.command.clear(),
+            KeyCode::Backspace => {
+                self.command.pop();
+            }
+            KeyCode::Char(c) => self.command.push(c),
+            _ => (),
         }
     }
 
     fn handle_event() -> io::Result<Option<Message>> {
         match event::read()? {
             Event::Key(key) if key.kind == KeyEventKind::Press => {
-                Ok(Self::handle_key_press(key))
+                Ok(Some(Message::KeyPressed(key)))
             }
             _ => Ok(None),
         }
