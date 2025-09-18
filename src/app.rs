@@ -3,6 +3,8 @@ use std::{io, path::PathBuf};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{DefaultTerminal, Frame, widgets::Paragraph};
 
+use crate::tab::Tab;
+
 enum Message {
     ChangeMode(Mode),
     Quit,
@@ -19,6 +21,7 @@ pub struct App {
     path: PathBuf,
     mode: Mode,
     status: AppStatus,
+    tab: Tab,
 }
 
 #[derive(Debug)]
@@ -33,6 +36,7 @@ impl App {
             path,
             mode: Mode::Normal,
             status: AppStatus::Running,
+            tab: Tab::new(),
         }
     }
 
