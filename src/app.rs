@@ -3,7 +3,7 @@ use std::{io, path::PathBuf};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     DefaultTerminal, Frame,
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout, Position, Size},
     widgets::Paragraph,
 };
 
@@ -27,6 +27,9 @@ pub struct App {
     status: AppStatus,
     tab: Tab,
     command: String,
+    terminal_size: Size,
+    cursor_position: Position,
+    cursor_snapshot: Option<Position>,
 }
 
 #[derive(Debug)]
@@ -43,6 +46,9 @@ impl App {
             status: AppStatus::Running,
             tab: Tab::new(),
             command: String::new(),
+            cursor_position: Default::default(),
+            terminal_size: Default::default(),
+            cursor_snapshot: Default::default(),
         }
     }
 
@@ -59,6 +65,8 @@ impl App {
             Paragraph::new(format!("{}", self.command)),
             layout[1],
         );
+
+        frame.set_cursor_position(self.cursor_position);
     }
 
     fn update(&mut self, message: Message) {
@@ -71,11 +79,14 @@ impl App {
         }
 
         if !self.command.is_empty() {
+            self.cursor_position.y = self.terminal_size.height;
+            self.cursor_position.x = self.command.len() as u16;
             self.mode = Mode::Command;
         }
 
         if let Mode::Command = self.mode {
             if self.command.is_empty() {
+                self.cursor_position = self.cursor_snapshot.unwrap_or_default();
                 self.mode = Mode::Normal;
             }
         }
@@ -84,7 +95,10 @@ impl App {
     fn handle_normal_mode_key(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Char('i') => self.mode = Mode::Insert,
-            KeyCode::Char(':') => self.command.push(':'),
+            KeyCode::Char(':') => {
+                self.cursor_snapshot = Some(self.cursor_position);
+                self.command.push(':');
+            }
             _ => (),
         }
     }
@@ -129,6 +143,8 @@ impl App {
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
         while let AppStatus::Running = self.status {
+            self.terminal_size = terminal.size()?;
+
             terminal.draw(|frame| self.view(frame))?;
             let current_message = Self::handle_event()?;
             if current_message.is_some() {
