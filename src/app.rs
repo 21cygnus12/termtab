@@ -58,11 +58,11 @@ impl App {
             .constraints(vec![Constraint::Min(0), Constraint::Length(1)])
             .split(frame.area());
         frame.render_widget(
-            Paragraph::new(format!("{:?}", self.mode)),
-            layout[0],
-        );
-        frame.render_widget(
-            Paragraph::new(format!("{}", self.command)),
+            Paragraph::new(match self.mode {
+                Mode::Normal => "",
+                Mode::Insert => "INSERT",
+                Mode::Command => &self.command,
+            }),
             layout[1],
         );
 
@@ -80,7 +80,6 @@ impl App {
 
         if !self.command.is_empty() {
             self.cursor_position.y = self.terminal_size.height;
-            self.cursor_position.x = self.command.len() as u16;
             self.mode = Mode::Command;
         }
 
@@ -97,7 +96,28 @@ impl App {
             KeyCode::Char('i') => self.mode = Mode::Insert,
             KeyCode::Char(':') => {
                 self.cursor_snapshot = Some(self.cursor_position);
+                self.cursor_position.x = 1;
                 self.command.push(':');
+            }
+            KeyCode::Char('h') => {
+                if self.cursor_position.x > 0 {
+                    self.cursor_position.x -= 1;
+                }
+            }
+            KeyCode::Char('j') => {
+                if self.cursor_position.y < self.terminal_size.height - 1 {
+                    self.cursor_position.y += 1;
+                }
+            }
+            KeyCode::Char('k') => {
+                if self.cursor_position.y > 0 {
+                    self.cursor_position.y -= 1;
+                }
+            }
+            KeyCode::Char('l') => {
+                if self.cursor_position.x < self.terminal_size.width - 1 {
+                    self.cursor_position.x += 1;
+                }
             }
             _ => (),
         }
@@ -114,9 +134,23 @@ impl App {
         match key_event.code {
             KeyCode::Esc => self.command.clear(),
             KeyCode::Backspace => {
-                self.command.pop();
+                self.cursor_position.x -= 1;
+                self.command.remove(self.cursor_position.x as usize);
             }
-            KeyCode::Char(c) => self.command.push(c),
+            KeyCode::Char(c) => {
+                self.cursor_position.x += 1;
+                self.command.insert(self.cursor_position.x as usize - 1, c);
+            }
+            KeyCode::Left => {
+                if self.cursor_position.x > 1 {
+                    self.cursor_position.x -= 1;
+                }
+            }
+            KeyCode::Right => {
+                if self.cursor_position.x < self.command.len() as u16 {
+                    self.cursor_position.x += 1;
+                }
+            }
             KeyCode::Enter => {
                 self.run_command();
                 self.command.clear();
