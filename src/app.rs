@@ -27,6 +27,7 @@ pub struct App {
     status: AppStatus,
     tab: Tab,
     command: String,
+    status_message: String,
     terminal_size: Size,
     cursor_position: Position,
     cursor_snapshot: Option<Position>,
@@ -45,7 +46,8 @@ impl App {
             mode: Mode::Normal,
             status: AppStatus::Running,
             tab: Tab::new(),
-            command: String::new(),
+            command: Default::default(),
+            status_message: Default::default(),
             cursor_position: Default::default(),
             terminal_size: Default::default(),
             cursor_snapshot: Default::default(),
@@ -59,7 +61,7 @@ impl App {
             .split(frame.area());
         frame.render_widget(
             Paragraph::new(match self.mode {
-                Mode::Normal => "",
+                Mode::Normal => &self.status_message,
                 Mode::Insert => "INSERT",
                 Mode::Command => &self.command,
             }),
@@ -73,8 +75,14 @@ impl App {
         match message {
             Message::KeyPressed(key_event) => match self.mode {
                 Mode::Normal => self.handle_normal_mode_key(key_event),
-                Mode::Insert => self.handle_insert_mode_key(key_event),
-                Mode::Command => self.handle_command_mode_key(key_event),
+                Mode::Insert => {
+                    self.status_message.clear();
+                    self.handle_insert_mode_key(key_event)
+                }
+                Mode::Command => {
+                    self.status_message.clear();
+                    self.handle_command_mode_key(key_event)
+                }
             },
         }
 
@@ -162,7 +170,7 @@ impl App {
     fn run_command(&mut self) {
         match &self.command[1..] {
             "quit" | "q" => self.status = AppStatus::Done,
-            _ => (),
+            _ => self.status_message = String::from("Not an editor command"),
         }
     }
 
