@@ -127,6 +127,7 @@ impl App {
                     self.cursor_position.x += 1;
                 }
             }
+            KeyCode::Char('0') => self.cursor_position.x = 0,
             _ => (),
         }
     }
