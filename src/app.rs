@@ -26,7 +26,7 @@ pub struct App {
     mode: Mode,
     status: AppStatus,
     tab: Tab,
-    command: String,
+    colon_command: String,
     status_message: String,
     terminal_size: Size,
     cursor_position: Position,
@@ -46,7 +46,7 @@ impl App {
             mode: Mode::Normal,
             status: AppStatus::Running,
             tab: Tab::new(),
-            command: Default::default(),
+            colon_command: Default::default(),
             status_message: Default::default(),
             cursor_position: Default::default(),
             terminal_size: Default::default(),
@@ -63,7 +63,7 @@ impl App {
             Paragraph::new(match self.mode {
                 Mode::Normal => &self.status_message,
                 Mode::Insert => "INSERT",
-                Mode::Command => &self.command,
+                Mode::Command => &self.colon_command,
             }),
             layout[1],
         );
@@ -86,13 +86,13 @@ impl App {
             },
         }
 
-        if !self.command.is_empty() {
+        if !self.colon_command.is_empty() {
             self.cursor_position.y = self.terminal_size.height;
             self.mode = Mode::Command;
         }
 
         if let Mode::Command = self.mode {
-            if self.command.is_empty() {
+            if self.colon_command.is_empty() {
                 self.cursor_position = self.cursor_snapshot.unwrap_or_default();
                 self.mode = Mode::Normal;
             }
@@ -105,7 +105,7 @@ impl App {
             KeyCode::Char(':') => {
                 self.cursor_snapshot = Some(self.cursor_position);
                 self.cursor_position.x = 1;
-                self.command.push(':');
+                self.colon_command.push(':');
             }
             KeyCode::Char('h') => {
                 if self.cursor_position.x > 0 {
@@ -141,14 +141,15 @@ impl App {
 
     fn handle_command_mode_key(&mut self, key_event: KeyEvent) {
         match key_event.code {
-            KeyCode::Esc => self.command.clear(),
+            KeyCode::Esc => self.colon_command.clear(),
             KeyCode::Backspace => {
                 self.cursor_position.x -= 1;
-                self.command.remove(self.cursor_position.x as usize);
+                self.colon_command.remove(self.cursor_position.x as usize);
             }
             KeyCode::Char(c) => {
                 self.cursor_position.x += 1;
-                self.command.insert(self.cursor_position.x as usize - 1, c);
+                self.colon_command
+                    .insert(self.cursor_position.x as usize - 1, c);
             }
             KeyCode::Left => {
                 if self.cursor_position.x > 1 {
@@ -156,20 +157,20 @@ impl App {
                 }
             }
             KeyCode::Right => {
-                if self.cursor_position.x < self.command.len() as u16 {
+                if self.cursor_position.x < self.colon_command.len() as u16 {
                     self.cursor_position.x += 1;
                 }
             }
             KeyCode::Enter => {
                 self.run_command();
-                self.command.clear();
+                self.colon_command.clear();
             }
             _ => (),
         }
     }
 
     fn run_command(&mut self) {
-        match &self.command[1..] {
+        match &self.colon_command[1..] {
             "quit" | "q" => self.status = AppStatus::Done,
             _ => self.status_message = String::from("Not an editor command"),
         }
